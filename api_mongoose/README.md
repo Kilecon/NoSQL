@@ -28,7 +28,7 @@ Cette API permet de gérer des profils d'utilisateurs avec diverses fonctionnali
 1. Clonez le dépôt :
 
    ```bash
-   git clone https://github.com/votre-repository.git
+   git clone https://github.com/Kilecon/DevOps.git
    cd votre-repository
    ```
 
@@ -55,6 +55,9 @@ Cette API utilise `Node.js` et `MongoDB`. Assurez-vous que MongoDB est bien conf
 ---
 
 ## API Endpoints
+
+---
+> Les réponses sont non-contractuelles, se référer au scrip de test.
 
 ### 1. Création de profil
 

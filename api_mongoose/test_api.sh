@@ -35,11 +35,18 @@ test_request() {
 echo "🛠️  Début des tests..."
 
 # Création d'un profil
+test_request "Création d'un profil Manon Arcas" "POST" "$BASE_URL/profiles" '{
+  "name": "Manon Arcas",
+  "email": "Manon Arcas'$RANDOM'@example.com"
+}'
+PROFILE_ID=$(jq -r '._id' response.json)
+
 test_request "Création d'un profil John Doe" "POST" "$BASE_URL/profiles" '{
   "name": "John Doe",
   "email": "john_doe_'$RANDOM'@example.com"
 }'
 PROFILE_ID=$(jq -r '._id' response.json)
+
 
 # Création d'un profil ami
 test_request "Création d'un profil Jane Doe" "POST" "$BASE_URL/profiles" '{
@@ -105,7 +112,7 @@ test_request "Ajout de Jane Doe comme amie" "POST" "$BASE_URL/profiles/$PROFILE_
 test_request "Récupération de la liste des amis de John Doe" "GET" "$BASE_URL/profiles/$PROFILE_ID/friends"
 
 # Filtrer les profils par nom
-test_request "Recherche de profils contenant 'Jane'" "GET" "$BASE_URL/profiles?search=Jane"
+test_request "Recherche de profils contenant 'Manon'" "GET" "$BASE_URL/profiles?search=Manon"
 
 # Suppression (soft delete) du profil
 test_request "Suppression (soft delete) du profil de John Doe" "DELETE" "$BASE_URL/profiles/$PROFILE_ID"
