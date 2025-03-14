@@ -56,7 +56,6 @@ Cette API utilise `Node.js` et `MongoDB`. Assurez-vous que MongoDB est bien conf
 
 ## API Endpoints
 
----
 > Les réponses sont non-contractuelles, se référer au scrip de test.
 
 ### 1. Création de profil
