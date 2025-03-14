@@ -82,22 +82,32 @@ Cette API utilise `Node.js` et `MongoDB`. Assurez-vous que MongoDB est bien conf
 
 ### 2. Récupération de profils
 
-**Endpoint** : `GET /api/profiles`  
+**Endpoint** : `GET /api/profiles?Location=Paris`  
 **Description** : Récupère la liste de tous les profils.
+**Filtres** : **search** (name, email, bio) // **skills** // **bio**
 
 **Réponse** :
 
 ```json
 [
   {
-    "_id": "67d41d8c20922fbe31d61a97",
-    "name": "John Doe",
-    "email": "john_doe@example.com"
-  },
-  {
-    "_id": "67d41d8c20922fbe31d61a9b",
-    "name": "Jane Doe",
-    "email": "jane_doe@example.com"
+    "_id": "67d43fd195c82ee2b9c91ef0",
+    "name": "John Updated",
+    "email": "john_updated_21663@example.com",
+    "skills": [],
+    "information": {
+      "_id": "67d43fd195c82ee2b9c91ef1",
+      "bio": "Développeur expérimenté",
+      "location": "Paris",
+      "website": "https://example.com"
+    },
+    "friends": [
+      "67d43fd195c82ee2b9c91ef4"
+    ],
+    "isDeleted": false,
+    "experience": [],
+    "createdAt": "2025-03-14T14:40:17.915Z",
+    "updatedAt": "2025-03-14T14:40:18.036Z"
   }
 ]
 ```

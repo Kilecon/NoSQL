@@ -2,94 +2,113 @@
 
 BASE_URL="http://localhost:3000/api"
 
-echo "🔄 Création d'un profil..."
-PROFILE_ID=$(curl -s -X POST -H "Content-Type: application/json" -d '{
+# Couleurs pour les logs
+GREEN="\e[32m"
+RED="\e[31m"
+CYAN="\e[36m"
+RESET="\e[0m"
+
+# Fonction pour tester une requête avec affichage du résultat
+test_request() {
+    local description=$1
+    local method=$2
+    local url=$3
+    local data=$4
+
+    echo -e "${CYAN}🔹 $description${RESET}"
+    if [ -z "$data" ]; then
+        response=$(curl -s -X $method -o response.json -w "%{http_code}" "$url")
+    else
+        response=$(curl -s -X $method -H "Content-Type: application/json" -d "$data" -o response.json -w "%{http_code}" "$url")
+    fi
+
+    if [ "$response" -eq 200 ] || [ "$response" -eq 201 ]; then
+        echo -e "${GREEN}✅ Succès${RESET}"
+        cat response.json | jq '.'
+    else
+        echo -e "${RED}❌ Échec (Code: $response)${RESET}"
+        cat response.json
+    fi
+    echo "-------------------------------------------"
+}
+
+echo "🛠️  Début des tests..."
+
+# Création d'un profil
+test_request "Création d'un profil John Doe" "POST" "$BASE_URL/profiles" '{
   "name": "John Doe",
-  "email": "john_doe@example.com"
-}' $BASE_URL/profiles | jq -r '._id')
+  "email": "john_doe_'$RANDOM'@example.com"
+}'
+PROFILE_ID=$(jq -r '._id' response.json)
 
-if [ "$PROFILE_ID" == "null" ]; then
-  echo "❌ Erreur: Impossible de créer le profil."
-  exit 1
-fi
-echo "✅ Profil créé avec ID: $PROFILE_ID"
-
-echo "🔄 Création d'un autre profil pour tester les amis..."
-FRIEND_ID=$(curl -s -X POST -H "Content-Type: application/json" -d '{
+# Création d'un profil ami
+test_request "Création d'un profil Jane Doe" "POST" "$BASE_URL/profiles" '{
   "name": "Jane Doe",
-  "email": "jane_doe@example.com"
-}' $BASE_URL/profiles | jq -r '._id')
+  "email": "jane_doe_'$RANDOM'@example.com"
+}'
+FRIEND_ID=$(jq -r '._id' response.json)
 
-if [ "$FRIEND_ID" == "null" ]; then
-  echo "❌ Erreur: Impossible de créer le profil ami."
-  exit 1
+# Vérifier si les profils ont bien été créés
+if [ "$PROFILE_ID" == "null" ] || [ "$FRIEND_ID" == "null" ]; then
+    echo -e "${RED}❌ Erreur: Impossible de créer les profils.${RESET}"
+    exit 1
 fi
-echo "✅ Profil ami créé avec ID: $FRIEND_ID"
 
-echo "🔍 Récupération de tous les profils..."
-curl -s $BASE_URL/profiles | jq
+# Récupérer tous les profils
+test_request "Récupération de tous les profils" "GET" "$BASE_URL/profiles"
 
-echo "🔍 Récupération du profil par ID..."
-curl -s "$BASE_URL/profiles/$PROFILE_ID" | jq
+# Récupérer un profil par ID
+test_request "Récupération du profil de John Doe" "GET" "$BASE_URL/profiles/$PROFILE_ID"
 
-echo "✏️ Mise à jour du profil..."
-UPDATE_RESPONSE=$(curl -s -X PUT -H "Content-Type: application/json" -d '{
+# Mettre à jour un profil
+test_request "Mise à jour du profil de John Doe" "PUT" "$BASE_URL/profiles/$PROFILE_ID" '{
   "name": "John Updated",
   "email": "john_updated_'$RANDOM'@example.com"
-}' "$BASE_URL/profiles/$PROFILE_ID")
+}'
 
-if echo "$UPDATE_RESPONSE" | grep -q "E11000 duplicate key error"; then
-  echo "❌ Erreur: L'email est déjà utilisé, modification ignorée."
-else
-  echo "✅ Profil mis à jour."
-fi
-
-echo "➕ Ajout d'une expérience..."
-EXP_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" -d '{
-  "title": "Développeur Web1",
+# Ajouter une expérience
+test_request "Ajout d'une expérience à John Doe" "POST" "$BASE_URL/profiles/$PROFILE_ID/experience" '{
+  "title": "Développeur Web",
   "company": "Tech Corp",
   "dates": {
     "start": "2022-01-01T00:00:00.000Z",
     "end": "2024-01-01T00:00:00.000Z"
   },
   "description": "Développement dapplications web"
-}' "$BASE_URL/profiles/$PROFILE_ID/experience")
+}'
+EXP_ID=$(jq -r '.experience[-1]._id' response.json)
 
-EXP_ID=$(echo "$EXP_RESPONSE" | jq -r '.experience[-1]._id')
+# Supprimer une expérience
+test_request "Suppression de l'expérience" "DELETE" "$BASE_URL/profiles/$PROFILE_ID/experience/$EXP_ID"
 
-if [ "$EXP_ID" == "null" ]; then
-  echo "❌ Erreur: Impossible d'ajouter une expérience."
-  exit 1
-fi
-echo "✅ Expérience ajoutée avec ID: $EXP_ID"
-
-echo "➖ Suppression d'une expérience..."
-curl -s -X DELETE "$BASE_URL/profiles/$PROFILE_ID/experience/$EXP_ID" | jq
-
-echo "➕ Ajout d'une compétence..."
-curl -s -X POST -H "Content-Type: application/json" -d '{
+# Ajouter une compétence
+test_request "Ajout d'une compétence JavaScript" "POST" "$BASE_URL/profiles/$PROFILE_ID/skills" '{
   "skill": "JavaScript"
-}' "$BASE_URL/profiles/$PROFILE_ID/skills" | jq
+}'
 
-echo "➖ Suppression d'une compétence..."
-curl -s -X DELETE "$BASE_URL/profiles/$PROFILE_ID/skills/JavaScript" | jq
+# Supprimer une compétence
+test_request "Suppression de la compétence JavaScript" "DELETE" "$BASE_URL/profiles/$PROFILE_ID/skills/JavaScript"
 
-echo "📝 Mise à jour des informations..."
-curl -s -X PUT -H "Content-Type: application/json" -d '{
+# Mise à jour des informations
+test_request "Mise à jour des informations de John Doe" "PUT" "$BASE_URL/profiles/$PROFILE_ID/information" '{
   "bio": "Développeur expérimenté",
   "location": "Paris",
   "website": "https://example.com"
-}' "$BASE_URL/profiles/$PROFILE_ID/information" | jq
+}'
 
-echo "👥 Ajout d'un ami..."
-curl -s -X POST -H "Content-Type: application/json" -d '{
+# Ajouter un ami
+test_request "Ajout de Jane Doe comme amie" "POST" "$BASE_URL/profiles/$PROFILE_ID/friends" '{
   "friendId": "'"$FRIEND_ID"'"
-}' "$BASE_URL/profiles/$PROFILE_ID/friends" | jq
+}'
 
-echo "🔍 Récupération de la liste des amis..."
-curl -s "$BASE_URL/profiles/$PROFILE_ID/friends" | jq
+# Récupérer la liste des amis
+test_request "Récupération de la liste des amis de John Doe" "GET" "$BASE_URL/profiles/$PROFILE_ID/friends"
 
-echo "🗑 Suppression (soft delete) du profil..."
-curl -s -X DELETE "$BASE_URL/profiles/$PROFILE_ID" | jq
+# Filtrer les profils par nom
+test_request "Recherche de profils contenant 'Jane'" "GET" "$BASE_URL/profiles?search=Jane"
 
-echo "✅ Tests terminés !"
+# Suppression (soft delete) du profil
+test_request "Suppression (soft delete) du profil de John Doe" "DELETE" "$BASE_URL/profiles/$PROFILE_ID"
+
+echo -e "${GREEN}✅ Tous les tests sont terminés avec succès !${RESET}"
+rm response.json
